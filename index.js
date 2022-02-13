@@ -1,7 +1,5 @@
-function getImage(){
-	console.log("Getting file...");
-}
 
+let dataExists=false;
 
 function manageCanvas(){
 let draw = false;
@@ -26,7 +24,7 @@ myCanvas.addEventListener("mousedown", canDraw, false);
 myCanvas.addEventListener("mouseup", cantDraw, false);
 myCanvas.addEventListener("mousemove", drawLine, false);
 myCanvas.addEventListener("mouseleave", cantDraw, false);
-myCanvas.width=500;
+myCanvas.width=800;
 myCanvas.height=500;
 function clearCanvas() {
 ctx.fillStyle = "rgb(0,0,0)";
@@ -63,8 +61,9 @@ y = y2;
 }
 }
 function removeLastItem(){
+  dateExists=false;
   var div2=document.getElementById("div2");
-  if (div2.childElementCount!=0){
+  while (div2.childElementCount!=0){
     div2.removeChild(div2.lastChild);
   }
   return;
@@ -79,5 +78,40 @@ function createCanvas(){
   removeLastItem();
 	div2.appendChild(canvas);
   manageCanvas();
+  dateExists=true;
+  addSumbitButton();
 }
+
+function displayImage(){
+  removeLastItem();
+  var file=document.getElementById("upload");
+  var fr = new FileReader();
+  fr.readAsDataURL(file.files[0]);
+  fr.onload = function(e){
+    var img = document.createElement("img");
+    img.src=e.target.result;
+    document.getElementById("div2").appendChild(img);
+    addSumbitButton();
+  }
+  dateExists=true;
+  
+  return;
+}
+
+function addSumbitButton(){
+  var button=document.createElement("button1");
+  button.id="button1";
+  button.style.height="50px";
+  button.style.width="100px";
+  button.textContent="Sumbit";
+  button.style.fontSize="20px";
+  document.getElementById("div2").append(button);
+  return;
+}
+
+function getFourierSeries(){
+  console.log("Processing");
+}
+
+
 
