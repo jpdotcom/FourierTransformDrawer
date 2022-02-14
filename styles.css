@@ -34,6 +34,7 @@ h1{
   user-select: none;
   -webkit-user-select: none;
   background-color: #DAAD86;
+  animation: fadein 1s;
 }
 .container{
 	display: flex;
