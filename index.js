@@ -2,14 +2,54 @@ let lastX=-1;
 let lastY=-1;
 let coordX=[];
 let coordY=[];
-var s;
-const dt=0.001;
+//var s;
+var count=0;
+let time_step=10;
 var t=0;
 let series_idx=1;
-var stopCallback = null;
+var pixel_space=[];
+var d;
+var series=[];
+function addallPoints(x1,x2,y1,y2){
+ 
+  
+  if (x1==x2){
+    for (let i=Math.min(y1,y2);i<=Math.max(y1,y2);i++){
+        if (i==y2){
+          continue;
+        }
+        pixel_space.push([x1,i]);
+      
+    }
 
+    return;
+  }
+  if (y1==y2){
+    for (let i=Math.min(x1,x2);i<=Math.max(x1,x2);i++){
+      if (i==x2){
+        continue;
+      }
+      pixel_space.push([i,y1]);
+      
+    }
 
-
+    return;
+  }
+  slope=(y2-y1)/(x2-x1);
+  curr_x=Math.min(x1,x2);
+  
+  while (curr_x<=Math.max(x1,x2)){
+    
+    let curr_y=slope*(curr_x-x1)+y1;
+    if ((curr_x==parseInt(curr_x) && parseInt(curr_y)==curr_y) && (curr_x!=x2 || curr_y!=y2)){
+      pixel_space.push([curr_x,curr_y]);
+    }
+    curr_x++;
+    
+    
+  }
+  return;
+}
 function manageCanvas(){
 let draw = false;
 var c = document.getElementById("draw");
@@ -48,13 +88,14 @@ function drawLine(e) {
 if (!draw) {
   return;
 }
-
+//pixel_space.push([x,y]);
 x2 = e.offsetX;
 y2 = e.offsetY;
+addallPoints(x,x2,y,y2);
 lastX=x2;
 lastY=y2;
 ctx.strokeStyle = "rgb(255,255,255)";
-ctx.lineWidth = 1;
+ctx.lineWidth = 3;
 a = [0];
 b = a;
 
@@ -71,28 +112,31 @@ x = x2;
 y = y2;
 }
 }
-function removeLastItem(){
+function removeAllItems(){
   dateExists=false;
   var div2=document.getElementById("div2");
   while (div2.childElementCount!=0){
     div2.removeChild(div2.lastChild);
   }
+
   return;
 }
 function createCanvas(){
-	console.log("Creating Canvas")
-	var canvas=document.createElement("canvas");
+  console.log("Creating Canvas")
+  var canvas=document.createElement("canvas");
   canvas.id="draw";
-  var div2=document.getElementById("div2")
-  removeLastItem();
-	div2.appendChild(canvas);
+  var div2=document.getElementById("div2");
+  pixel_space=[];
+  removeAllItems();
+  resetAnimation();
+  div2.appendChild(canvas);
   manageCanvas();
   addSumbitButton();
-  collectCords();
+  
 }
 
 function displayImage(){
-  removeLastItem();
+  removeAllItems();
   var file=document.getElementById("upload");
   var fr = new FileReader();
   fr.readAsDataURL(file.files[0]);
@@ -115,31 +159,31 @@ function mult(val1,val2){
   
   return [a*c-b*d,a*d+b*c];
 }
-function integrate(f,pixel_space,step){
+function integrate(f){
   var ans=[0,0];
-  var t=0;
+  var N=pixel_space.length;
   for (var i=0;i<pixel_space.length;i++){
     var x=pixel_space[i][0];
     var y=pixel_space[i][1];
 
     var val1=[x,y];
-    var val2=[Math.cos(-2*Math.PI*f*t),Math.sin(-2*Math.PI*f*t)];
+    var val2=[Math.cos(2*Math.PI/N*i*f),Math.sin(2*Math.PI/N*i*f)];
     var prod=mult(val1,val2);
     
-    ans[0]+=prod[0]*step;
-    ans[1]+=prod[1]*step;
-    t+=step;
+    ans[0]+=prod[0]*1/N;
+    ans[1]+=prod[1]*1/N;
    
   }
   
   return ans
 }
-function eval(t,freq,c){
+function eval(idx,freq,c){
   var ans=[0,0];
+  var N=pixel_space.length;
   for (var i=0;i<freq.length;i++){
     var f=freq[i];
     var val1=c[i];
-    var val2=[Math.cos(2*Math.PI*f*t),Math.sin(2*Math.PI*f*t)];
+    var val2=[Math.cos(2*Math.PI/N*idx*f),-1*Math.sin(2*Math.PI/N*idx*f)];
     var prod=mult(val1,val2);
     
     ans[0]+=prod[0]
@@ -150,59 +194,57 @@ function eval(t,freq,c){
   
 }
 
-function getFourierSeries(){
-  console.log("Processing");
-
-  clearInterval(s);
-  let pixel_space=[]
+function getFourierSeries(numCircles){
+  if (numCircles==-1 && count==parseInt(pixel_space.length/2+1)){
+    clearInterval(d);
+    return;
+  }
+  if (numCircles==-1){
+    numCircles=count;
+  };
+  
   let freq=[];
   let c=[]
-  const numCircles=250;
-  var series=[];
-  t=coordX.length*dt;
-  let step=(dt/(t-dt));
-  console.log(step);
-  for (var i=0;i<1;i+=step){
-
-    let idx=parseInt(i*(t-dt)/dt);
-    pixel_space.push([coordX[idx],coordY[idx]]);
-    
-  }
- 
+  series=[]
+  numCircles=parseInt(numCircles);
+  
   for (var i=-1*numCircles;i<numCircles+1;i++){
     
     freq.push(i);
   }
   
   for (var i=(-1*numCircles);i<numCircles+1;i++){
-    it=integrate(i,pixel_space,step);
-    c.push([it[0],it[1]]);
+    
+    it=integrate(i);
+    c.push(it);
     
 
   }
-  
-  for (var i=0;i<1;i+=step){
+  for (var i=0;i<pixel_space.length;i++){
    
 
-    var add=eval(i,freq,c,pixel_space);
-    
+    var add=eval(i,freq,c);
+    if (i==0){
+    }
     series.push([parseInt(add[0]),parseInt(add[1])]);
     
   }
-  console.log(series.length,pixel_space.length);
   // draw fourier series
-  series_idx=1;
+  
   var canvas=document.getElementById("draw");
   var ctx = canvas.getContext("2d", { alpha: false });
   ctx.fillStyle = "rgb(0,0,0)";
+  series_idx=1;
   ctx.fillRect(0, 0, myCanvas.width, myCanvas.height);
-  
-  var d = setInterval((series) => {
-    
-    if (series_idx==series.length){
-      clearInterval(d);
+  while (!draw()){
+  }
+  count++;
       
-      return;
+}
+function draw(){
+    
+    if (series_idx==series.length){      
+      return true;
     }
     var x1=series[series_idx-1][0];
     var y1=series[series_idx-1][1];
@@ -215,44 +257,49 @@ function getFourierSeries(){
     ctx.lineTo(x2,y2);
     ctx.stroke();
     series_idx++;
-    }
-    ,1000*dt,series);
-    
-}
-
-function addSumbitButton(){
-  var button=document.createElement("button1");
-  button.id="button1";
-  button.style.height="50px";
-  button.style.width="100px";
-  button.textContent="Sumbit";
-  button.style.fontSize="20px";
-  button.onclick=function () {getFourierSeries()};
-  document.getElementById("div2").append(button);
-  return;
-}
-
-
-
-function addCord(){
-  
-  if (lastX!=-1){
-    coordX.push(lastX);
-    coordY.push(lastY);
-    
+    return false;
   }
 
-  
+
+function addSlider(){
+  var slider=document.createElement("input");
+  slider.type="range";
+  slider.id="slider";
+  slider.min="1";
+  slider.max=parseInt(pixel_space.length/2)+1;
+  slider.value=count;
+  slider.onchange=function(){getFourierSeries(slider.value)};
+  div2=document.getElementById("div2");
+  div2.appendChild(slider);
 }
-
-
-
-function collectCords(){
-
-  coordX=[];
-  coordY=[];
-  lastX=-1;
-  lastY=-1;
-  t=0;
-  s = setInterval(addCord,dt*1000);
+function end(){
+  console.log("EHJSDKF:LSJKDF");
+  document.getElementById("div2").removeChild(document.getElementById("button3")); 
+  clearInterval(d); 
+  addSlider();
+}
+function addStopAnimation(){
+  let button3=document.createElement("button");
+  button3.id="button3";
+  button3.textContent="Stop Animation";
+  button3.onclick=function(){end()}
+  document.getElementById("div2").append(button3);
+}
+function resetAnimation(){
+  clearInterval(d);
+  count=0;
+}
+function lockCanvas(){
+  document.getElementById("div2").removeChild(document.getElementById("button2"));
+  addStopAnimation();
+  d=setInterval(getFourierSeries,15,-1);
+}
+function addSumbitButton(){
+  var button=document.createElement("button");
+  button.id="button2";
+  button.textContent="Sumbit";
+ 
+  button.onclick=function () {lockCanvas()};
+  document.getElementById("div2").append(button);
+  return;
 }
